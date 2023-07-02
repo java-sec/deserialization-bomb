@@ -6,7 +6,7 @@
 https://github.com/jbloch/effective-java-3e-source-code/blob/bdc828a7af2bdfac28e3c38bd7d1a2ae05736ccc/src/effectivejava/chapter12/item85/DeserializationBomb.java
 ```
 
-原文实例是散落在两个文件中的，将其整理到一个文件中： 
+原文实例是散落在两个文件中的，将其整理到一个文件中：
 
 ```java
 package com.cc11001100;
@@ -79,42 +79,40 @@ public class Main {
 }
 ```
 
-原理是HashSet是基于HashMap实现的，而HashMap在反序列化的时候需要计算其hashcode，而它的hashcode方法的实现是计算其中每个元素的hashcode，而它里面的元素又都是HashMap，所以就递归计算，于是就类似于斐波那契树似的展开为一张非常庞大但是又有非常多重复计算的树： 
+原理是HashSet是基于HashMap实现的，而HashMap在反序列化的时候需要计算其hashcode，而它的hashcode方法的实现是计算其中每个元素的hashcode，而它里面的元素又都是HashMap，所以就递归计算，于是就类似于斐波那契树似的展开为一张非常庞大但是又有非常多重复计算的树：
 
 ```java
     /**
-     * Returns the hash code value for this map.  The hash code of a map is
-     * defined to be the sum of the hash codes of each entry in the map's
-     * <tt>entrySet()</tt> view.  This ensures that <tt>m1.equals(m2)</tt>
-     * implies that <tt>m1.hashCode()==m2.hashCode()</tt> for any two maps
-     * <tt>m1</tt> and <tt>m2</tt>, as required by the general contract of
-     * {@link Object#hashCode}.
-     *
-     * @implSpec
-     * This implementation iterates over <tt>entrySet()</tt>, calling
-     * {@link Map.Entry#hashCode hashCode()} on each element (entry) in the
-     * set, and adding up the results.
-     *
-     * @return the hash code value for this map
-     * @see Map.Entry#hashCode()
-     * @see Object#equals(Object)
-     * @see Set#equals(Object)
-     */
-    public int hashCode() {
-        int h = 0;
-        Iterator<Entry<K,V>> i = entrySet().iterator();
-        while (i.hasNext())
-            h += i.next().hashCode();
+ * Returns the hash code value for this map.  The hash code of a map is
+ * defined to be the sum of the hash codes of each entry in the map's
+ * <tt>entrySet()</tt> view.  This ensures that <tt>m1.equals(m2)</tt>
+ * implies that <tt>m1.hashCode()==m2.hashCode()</tt> for any two maps
+ * <tt>m1</tt> and <tt>m2</tt>, as required by the general contract of
+ * {@link Object#hashCode}.
+ *
+ * @implSpec
+ * This implementation iterates over <tt>entrySet()</tt>, calling
+ * {@link Map.Entry#hashCode hashCode()} on each element (entry) in the
+ * set, and adding up the results.
+ *
+ * @return the hash code value for this map
+ * @see Map.Entry#hashCode()
+ * @see Object#equals(Object)
+ * @see Set#equals(Object)
+ */
+public int hashCode(){
+        int h=0;
+        Iterator<Entry<K, V>>i=entrySet().iterator();
+        while(i.hasNext())
+        h+=i.next().hashCode();
         return h;
-    }
+        }
 ```
-
-
 
 我们可以尝试来破解一下这种庞大的计算，在动态规划中常用缓存来月约掉大量重复的计算，我们自定义一个Set，这个Set会缓存hashcode的计算结果：
 
 ```java
-package com.cc11001100.bomb.crack;
+package com.cc11001100.bomb.cache;
 
 import java.util.HashSet;
 
@@ -143,7 +141,7 @@ public class CacheHashcodeSet<E> extends HashSet<E> {
 然后将反序列化炸弹代码里的Set替换为带缓存的Set再运行一下就能很快完成反序列化：
 
 ```java
-package com.cc11001100.bomb.crack;
+package com.cc11001100.bomb.cache;
 
 import java.io.*;
 import java.util.Set;
@@ -215,9 +213,15 @@ public class CrackBombMain {
 }
 ```
 
+但是实际情况中基本没有实用性，一个是Set中的元素可能会是一直在变的，另一个是我们不太可能把所有的Map使用都写一个安全的实现并强制开发使用我们自己的实现，这几乎没法推广开来。
 
 
 
+TODO
+- 基于JEP-290防御 
+- 反序列化炸弹配合消耗内存
+- 反序列化炸弹配合消耗CPU
+- 
 
 
 
